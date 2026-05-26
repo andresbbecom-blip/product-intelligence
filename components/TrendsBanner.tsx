@@ -37,7 +37,22 @@ function formatDate(dateStr: string): string {
 }
 
 export default function TrendsBanner({ result }: { result: ResearchResult }) {
-  const { trendTimeline, relatedQueries, trendPeriod, country, query } = result;
+  const { trendTimeline, relatedQueries, trendPeriod, country, query, trendsError } = result;
+
+  if (trendsError) {
+    return (
+      <div
+        className="rounded-2xl p-5 flex items-center gap-3 animate-fade-in"
+        style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}
+      >
+        <span className="text-2xl flex-shrink-0">📉</span>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: '#93C5FD' }}>Datos de tendencia no disponibles</p>
+          <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>No se pudo conectar con Google Trends en este momento</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!trendTimeline?.length) return null;
 
