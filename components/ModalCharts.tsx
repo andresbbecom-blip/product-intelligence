@@ -19,7 +19,7 @@ const TT: object = {
   labelStyle: { color: '#94A3B8', fontWeight: 600 },
 };
 
-const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const CHANNEL_COLORS = ['#448AFF', '#FF1744', '#FFD740', '#00E676'];
 const DEFAULT_CHANNELS = [
   { name: 'Meta Ads', value: 40 },
@@ -28,7 +28,19 @@ const DEFAULT_CHANNELS = [
   { name: 'WhatsApp', value: 10 },
 ];
 
-export default function ModalCharts({ product }: { product: Product }) {
+function getDateLabels(period: number): string[] {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const daysAgo = Math.round((period / 5) * (5 - i));
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    if (period <= 30) return `${d.getDate()}/${d.getMonth() + 1}`;
+    if (period <= 90) return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
+    return MONTH_SHORT[d.getMonth()];
+  });
+}
+
+export default function ModalCharts({ product, trendPeriod }: { product: Product; trendPeriod?: number }) {
   const radarData = [
     { metric: 'Demanda',     value: product.demandScore  ?? product.trendScore ?? 65 },
     { metric: 'Margen',      value: product.marginScore  ?? product.ease ?? 60 },
@@ -39,8 +51,9 @@ export default function ModalCharts({ product }: { product: Product }) {
   ];
 
   const defaultHistory = [48, 55, 61, 67, 73, product.opportunityScore ?? 75];
+  const dateLabels = getDateLabels(trendPeriod ?? 30);
   const trendData = ((product.trendHistory?.length === 6 ? product.trendHistory : defaultHistory)).map((v, i) => ({
-    month: MONTHS[i] ?? `M${i + 1}`,
+    month: dateLabels[i] ?? `M${i + 1}`,
     value: v,
   }));
 

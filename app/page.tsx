@@ -35,6 +35,7 @@ export default function Home() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [trendPeriod, setTrendPeriod] = useState<number>(30);
 
   useEffect(() => { setHistory(loadHistory()); }, []);
 
@@ -66,6 +67,7 @@ export default function Home() {
           productUrl: url || undefined,
           imageBase64: imageBase64 || undefined,
           imageMimeType: imageMimeType || undefined,
+          trendPeriod: selectedSource === 'google_trends' ? trendPeriod : undefined,
         }),
       });
 
@@ -142,6 +144,30 @@ export default function Home() {
       <main className="relative z-10 pt-4 space-y-2">
         <SourceSelector selectedSource={selectedSource} onSelect={handleSourceSelect} />
 
+        {/* Google Trends period selector */}
+        {selectedSource === 'google_trends' && (
+          <div className="px-4 sm:px-6 max-w-7xl mx-auto w-full animate-fade-in">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-widest flex-shrink-0" style={{ color: 'var(--text-muted)' }}>Período</span>
+              {([15, 30, 90, 365] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setTrendPeriod(p)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                  style={{
+                    background: trendPeriod === p ? 'rgba(68,138,255,0.18)' : 'rgba(255,255,255,0.04)',
+                    color: trendPeriod === p ? '#93C5FD' : 'var(--text-muted)',
+                    border: `1px solid ${trendPeriod === p ? 'rgba(68,138,255,0.45)' : 'rgba(255,255,255,0.08)'}`,
+                    boxShadow: trendPeriod === p ? '0 0 12px rgba(68,138,255,0.2)' : 'none',
+                  }}
+                >
+                  {p === 365 ? '1 año' : `${p}d`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Validation error */}
         {error && !isLoading && (
           <div className="px-4 sm:px-6 max-w-7xl mx-auto animate-fade-in">
@@ -168,7 +194,12 @@ export default function Home() {
       </main>
 
       {selectedProduct && result && (
-        <ProductModal product={selectedProduct} source={result.source} onClose={() => setSelectedProduct(null)} />
+        <ProductModal
+          product={selectedProduct}
+          source={result.source}
+          trendPeriod={result.source === 'google_trends' ? trendPeriod : undefined}
+          onClose={() => setSelectedProduct(null)}
+        />
       )}
     </div>
   );

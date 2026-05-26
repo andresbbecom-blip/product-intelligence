@@ -169,8 +169,22 @@ export default function Header({
                 onChange={e => onSearchChange(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && canSearch && onSearch()}
                 placeholder="Busca un producto, marca o nicho..."
-                className="search-input w-full h-12 pl-11 pr-4 rounded-2xl text-[15px] font-medium"
+                className="search-input w-full h-12 pl-11 rounded-2xl text-[15px] font-medium"
+                style={{ paddingRight: searchQuery ? '44px' : '16px' }}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => { onSearchChange(''); onNicheChange(''); setTimeout(() => inputRef.current?.focus(), 10); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-xl transition-all"
+                  style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLElement).style.color = '#FCA5A5'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
+                  title="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Image button */}
@@ -193,25 +207,27 @@ export default function Header({
                   className="absolute top-full mt-2 right-0 rounded-2xl overflow-hidden z-50 w-48"
                   style={{ background: '#15151E', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}
                 >
-                  <button
-                    onClick={() => { cameraRef.current?.click(); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all"
+                  <label
+                    htmlFor="pi-camera-input"
+                    onClick={() => setShowImageMenu(false)}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all cursor-pointer"
                     style={{ color: 'var(--text-secondary)' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                   >
                     <span className="text-base">📸</span> Tomar foto
-                  </button>
+                  </label>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 12px' }} />
-                  <button
-                    onClick={() => { uploadRef.current?.click(); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all"
+                  <label
+                    htmlFor="pi-upload-input"
+                    onClick={() => setShowImageMenu(false)}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all cursor-pointer"
                     style={{ color: 'var(--text-secondary)' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                   >
                     <span className="text-base">🖼️</span> Subir imagen
-                  </button>
+                  </label>
                 </div>
               )}
             </div>
@@ -398,20 +414,22 @@ export default function Header({
         </div>
       </div>
 
-      {/* Hidden file inputs */}
+      {/* Hidden file inputs — sr-only for reliable mobile triggering via label */}
       <input
         ref={uploadRef}
+        id="pi-upload-input"
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="hidden"
+        className="sr-only"
         onChange={handleFileChange}
       />
       <input
         ref={cameraRef}
+        id="pi-camera-input"
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        className="sr-only"
         onChange={handleFileChange}
       />
     </header>

@@ -34,7 +34,12 @@ const SOURCE_CONTEXT: Record<string, string> = {
 };
 
 // ── Prompt builders ───────────────────────────────────────────────────────────
-function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string): string {
+function trendPeriodNote(source: string, trendPeriod?: number): string {
+  if (source !== 'google_trends' || !trendPeriod) return '';
+  return `\n- trendHistory: los 6 puntos deben representar los últimos ${trendPeriod} días divididos en intervalos iguales (punto 1 = hace ${trendPeriod}d, punto 6 = hoy)`;
+}
+
+function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string, trendPeriod?: number): string {
   const platform = detectPlatform(productUrl);
   const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
 
@@ -89,12 +94,12 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta/implementación para un emprendedor
 - channels: array de exactamente 4 objetos {name, value} con los canales más efectivos (Meta Ads, TikTok, Google Ads, WhatsApp, etc.) y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)
+- trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)${trendPeriodNote(source, trendPeriod)}
 - Incluye campos adicionales según la fuente seleccionada
 - Todo en español`;
 }
 
-function buildQueryPrompt(source: string, query: string, country: string): string {
+function buildQueryPrompt(source: string, query: string, country: string, trendPeriod?: number): string {
   const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
 
   return `Eres un experto investigador de productos para ecommerce y dropshipping en Latinoamérica.
@@ -142,12 +147,12 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta para un emprendedor
 - channels: array de 4 objetos {name, value} con los mejores canales de venta y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses
+- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${trendPeriodNote(source, trendPeriod)}
 - Todos los textos en español
 - Incluye campos adicionales según la fuente indicada`;
 }
 
-function buildImagePrompt(source: string, country: string, extraQuery?: string): string {
+function buildImagePrompt(source: string, country: string, extraQuery?: string, trendPeriod?: number): string {
   const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
@@ -202,7 +207,7 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta para un emprendedor
 - channels: array de 4 objetos {name, value} con los mejores canales de venta y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses
+- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${trendPeriodNote(source, trendPeriod)}
 - Incluye campos adicionales según la fuente seleccionada
 - Todo en español`;
 }
@@ -220,7 +225,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Request body inválido' }, { status: 400 });
 
-    const { query, source, country, productUrl, imageBase64, imageMimeType } = body;
+    const { query, source, country, productUrl, imageBase64, imageMimeType, trendPeriod } = body;
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.trim().length > 0;
     const hasUrl   = typeof productUrl  === 'string' && productUrl.trim().length  > 0;
@@ -240,12 +245,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const period = typeof trendPeriod === 'number' ? trendPeriod : undefined;
+
     // Build prompt: image > URL > text query
     const prompt = hasImage
-      ? buildImagePrompt(source, country, hasQuery ? query.trim() : undefined)
+      ? buildImagePrompt(source, country, hasQuery ? query.trim() : undefined, period)
       : hasUrl
-      ? buildUrlPrompt(productUrl.trim(), source, country, hasQuery ? query.trim() : undefined)
-      : buildQueryPrompt(source, query.trim(), country);
+      ? buildUrlPrompt(productUrl.trim(), source, country, hasQuery ? query.trim() : undefined, period)
+      : buildQueryPrompt(source, query.trim(), country, period);
 
     const displayQuery = hasImage
       ? `📷 Imagen${hasQuery ? ': ' + query.trim() : ''}`

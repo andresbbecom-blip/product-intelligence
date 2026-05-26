@@ -48,10 +48,11 @@ function Stars({ rating }: { rating: number }) {
 interface ProductModalProps {
   product: Product;
   source: string;
+  trendPeriod?: number;
   onClose: () => void;
 }
 
-export default function ProductModal({ product, source, onClose }: ProductModalProps) {
+export default function ProductModal({ product, source, trendPeriod, onClose }: ProductModalProps) {
   const sourceMeta = DATA_SOURCES.find(s => s.id === source);
   const [mounted, setMounted] = useState(false);
 
@@ -382,7 +383,7 @@ export default function ProductModal({ product, source, onClose }: ProductModalP
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Análisis Gráfico</span>
                 <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, rgba(170,0,255,0.5), transparent)' }} />
               </div>
-              <ModalCharts product={product} />
+              <ModalCharts product={product} trendPeriod={trendPeriod} />
             </div>
           )}
 
