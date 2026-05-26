@@ -24,7 +24,7 @@ function detectPlatform(url: string): string {
 // ── Source-specific analysis angles ──────────────────────────────────────────
 const SOURCE_CONTEXT: Record<string, string> = {
   amazon:       `Analiza la competencia en Amazon para este producto en ${'${country}'}. ¿Cuántos sellers lo venden? ¿Cuál es el rango de precios? ¿Hay espacio para un nuevo vendedor? Incluye precio, rating, reviews y ventas estimadas de productos similares en Amazon.`,
-  google_trends:`Analiza la demanda de búsqueda para este tipo de producto en ${'${country}'}. ¿Está en tendencia? ¿Va subiendo o bajando? Incluye: trendDirection ("up"/"down"/"stable"), relatedQueries (array 3-5), peakMonths (array).`,
+  google_trends:`Investiga la tendencia de búsqueda en Google Trends para este producto en ${'${country}'} durante los últimos {period} días. ¿Está en tendencia al alza, bajando o estable? Devuelve los productos más buscados relacionados con este nicho. Incluye: trendDirection ("up"/"down"/"stable"), relatedQueries (array 3-5 términos de búsqueda relacionados en ${'${country}'}), peakMonths (array con nombres de meses de mayor demanda). El array trendHistory debe reflejar el comportamiento REAL de las búsquedas en los últimos {period} días (6 puntos equidistantes, más antiguo primero).`,
   meta_ads:     `Analiza qué anuncios de Facebook/Instagram existen para este tipo de producto dirigidos a ${'${country}'}. ¿Hay muchos anunciantes? ¿Qué hooks están usando? Incluye: hooks (array 3-5 hooks efectivos), adFormats (array), audienceAge.`,
   tiktok:       `Investiga qué productos se están vendiendo AHORA en TikTok Shop USA (Estados Unidos). Encuentra los más vendidos actualmente en TikTok Shop. Para cada producto incluye: nombre del producto, precio en USD, volumen de ventas estimado, rating, nombre de la tienda que lo vende, y evalúa si es viable para dropshipping en Latinoamérica / ${'${country}'}.`,
   dropi:        `Investiga si el producto buscado está disponible en el catálogo de Dropi (dropi.co), la plataforma de dropshipping para Latinoamérica. Si lo encuentras: nombre del producto en Dropi, precio proveedor, precio sugerido de venta en ${'${country}'}, margen estimado (%), si tiene envío rápido, usa supplier: "Dropi". Si NO lo encuentras: sugiere 3-5 productos similares disponibles en Dropi con sus precios y márgenes estimados. Llena leadTime con el tiempo de entrega estimado de Dropi.`,
@@ -44,16 +44,19 @@ function periodNote(source: string, trendPeriod?: number, topVentasPeriod?: numb
   return '';
 }
 
-function buildSourceCtx(source: string, country: string, topVentasPeriod?: number): string {
+function buildSourceCtx(source: string, country: string, trendPeriod?: number, topVentasPeriod?: number): string {
+  const period = source === 'google_trends'
+    ? String(trendPeriod ?? 30)
+    : String(topVentasPeriod ?? 30);
   return (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete)
     .replaceAll("${'${country}'}", country)
     .replaceAll('${country}', country)
-    .replace('{period}', String(topVentasPeriod ?? 30));
+    .replaceAll('{period}', period);
 }
 
 function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
   const platform = detectPlatform(productUrl);
-  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
+  const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 
@@ -114,7 +117,7 @@ REGLAS:
 }
 
 function buildQueryPrompt(source: string, query: string, country: string, trendPeriod?: number, topVentasPeriod?: number): string {
-  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
+  const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
 
   return `Eres un experto investigador de productos para ecommerce y dropshipping en Latinoamérica.
 
@@ -169,7 +172,7 @@ REGLAS:
 }
 
 function buildImagePrompt(source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
-  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
+  const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 

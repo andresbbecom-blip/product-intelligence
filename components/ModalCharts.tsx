@@ -40,6 +40,16 @@ function getDateLabels(period: number): string[] {
   });
 }
 
+function periodLabel(period?: number): string {
+  if (!period) return '6 Meses';
+  if (period === 365) return '12 Meses';
+  if (period === 90)  return '90 Días';
+  if (period === 30)  return '30 Días';
+  if (period === 15)  return '15 Días';
+  if (period === 8)   return '8 Días';
+  return `${period} Días`;
+}
+
 export default function ModalCharts({ product, trendPeriod }: { product: Product; trendPeriod?: number }) {
   const radarData = [
     { metric: 'Demanda',     value: product.demandScore  ?? product.trendScore ?? 65 },
@@ -86,7 +96,7 @@ export default function ModalCharts({ product, trendPeriod }: { product: Product
 
       {/* ── Area trend ── */}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(68,138,255,0.06)', border: '1px solid rgba(68,138,255,0.2)' }}>
-        <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#93C5FD' }}>📈 Tendencia 6 Meses</div>
+        <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#93C5FD' }}>📈 Tendencia {periodLabel(trendPeriod)}</div>
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={trendData} margin={{ top: 5, right: 10, bottom: 0, left: -20 }}>
             <defs>
