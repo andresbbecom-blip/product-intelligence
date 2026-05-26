@@ -69,12 +69,8 @@ export default function Header({
   onSearch, isLoading,
 }: HeaderProps) {
   const [open, setOpen] = useState(false);
-  const [showImageMenu, setShowImageMenu] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const imageMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const uploadRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
   const current = COUNTRIES.find(c => c.name === selectedCountry) ?? COUNTRIES[0];
 
   const detectedPlatform = productUrl ? detectPlatformClient(productUrl) : null;
@@ -83,7 +79,6 @@ export default function Header({
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-      if (imageMenuRef.current && !imageMenuRef.current.contains(e.target as Node)) setShowImageMenu(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -100,7 +95,6 @@ export default function Header({
       onImageChange(base64, mimeType, dataUrl);
     };
     reader.readAsDataURL(file);
-    setShowImageMenu(false);
     e.target.value = '';
   }, [onImageChange]);
 
@@ -170,67 +164,38 @@ export default function Header({
                 onKeyDown={e => e.key === 'Enter' && canSearch && onSearch()}
                 placeholder="Busca un producto, marca o nicho..."
                 className="search-input w-full h-12 pl-11 rounded-2xl text-[15px] font-medium"
-                style={{ paddingRight: searchQuery ? '44px' : '16px' }}
+                style={{ paddingRight: searchQuery ? '48px' : '16px' }}
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => { onSearchChange(''); onNicheChange(''); setTimeout(() => inputRef.current?.focus(), 10); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-xl transition-all"
-                  style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLElement).style.color = '#FCA5A5'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
-                  title="Limpiar búsqueda"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors"
+                  style={{ width: '40px', height: '40px', color: '#64748B', background: 'none', border: 'none', flexShrink: 0 }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#F87171'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#64748B'}
+                  aria-label="Limpiar búsqueda"
                 >
-                  ✕
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
                 </button>
               )}
             </div>
 
-            {/* Image button */}
-            <div className="relative flex-shrink-0" ref={imageMenuRef}>
-              <button
-                onClick={() => setShowImageMenu(v => !v)}
-                className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl border transition-all"
-                style={{
-                  background: imageBase64 ? 'rgba(124,58,237,0.18)' : (showImageMenu ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'),
-                  borderColor: imageBase64 ? 'rgba(124,58,237,0.55)' : (showImageMenu ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.09)'),
-                  boxShadow: imageBase64 ? '0 0 16px rgba(124,58,237,0.2)' : 'none',
-                }}
-                title="Analizar por imagen"
-              >
-                📷
-              </button>
-
-              {showImageMenu && (
-                <div
-                  className="absolute top-full mt-2 right-0 rounded-2xl overflow-hidden z-50 w-48"
-                  style={{ background: '#15151E', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}
-                >
-                  <label
-                    htmlFor="pi-camera-input"
-                    onClick={() => setShowImageMenu(false)}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all cursor-pointer"
-                    style={{ color: 'var(--text-secondary)' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  >
-                    <span className="text-base">📸</span> Tomar foto
-                  </label>
-                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 12px' }} />
-                  <label
-                    htmlFor="pi-upload-input"
-                    onClick={() => setShowImageMenu(false)}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-all cursor-pointer"
-                    style={{ color: 'var(--text-secondary)' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  >
-                    <span className="text-base">🖼️</span> Subir imagen
-                  </label>
-                </div>
-              )}
-            </div>
+            {/* Image button — label triggers native file picker directly (works on mobile + desktop) */}
+            <label
+              htmlFor="pi-image-input"
+              className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl border transition-all cursor-pointer flex-shrink-0"
+              style={{
+                background: imageBase64 ? 'rgba(124,58,237,0.18)' : 'rgba(255,255,255,0.04)',
+                borderColor: imageBase64 ? 'rgba(124,58,237,0.55)' : 'rgba(255,255,255,0.09)',
+                boxShadow: imageBase64 ? '0 0 16px rgba(124,58,237,0.2)' : 'none',
+              }}
+              title="Analizar por imagen (cámara o galería)"
+            >
+              📷
+            </label>
 
             <button
               onClick={onSearch}
@@ -414,21 +379,11 @@ export default function Header({
         </div>
       </div>
 
-      {/* Hidden file inputs — sr-only for reliable mobile triggering via label */}
+      {/* Single file input — accept="image/*" lets mobile OS show camera+gallery chooser natively */}
       <input
-        ref={uploadRef}
-        id="pi-upload-input"
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
-        onChange={handleFileChange}
-      />
-      <input
-        ref={cameraRef}
-        id="pi-camera-input"
+        id="pi-image-input"
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         onChange={handleFileChange}
       />

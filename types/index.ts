@@ -34,6 +34,7 @@ export interface Product {
   ease?: number;
   channels?: { name: string; value: number }[];
   trendHistory?: number[];
+  platform?: string;
 }
 
 export interface ResearchResult {
@@ -108,27 +109,27 @@ export const DATA_SOURCES = [
   },
   {
     id: 'tiktok',
-    name: 'TikTok / Kalodata',
+    name: 'TikTok Shop',
     icon: '🎵',
-    description: 'Productos virales en TikTok Shop',
+    description: 'Productos más vendidos en TikTok Shop USA',
     gradient: 'from-pink-500 to-rose-500',
     bgColor: 'rgba(236,72,153,0.08)',
     borderColor: 'rgba(236,72,153,0.25)',
   },
   {
     id: 'dropi',
-    name: 'Dropi Trending',
+    name: 'Dropi',
     icon: '💧',
-    description: 'Productos trending en Dropi Latam',
+    description: 'Buscar producto en catálogo Dropi',
     gradient: 'from-violet-500 to-purple-600',
     bgColor: 'rgba(139,92,246,0.08)',
     borderColor: 'rgba(139,92,246,0.25)',
   },
   {
-    id: 'tuwinner',
-    name: 'TuWinner',
-    icon: '🏆',
-    description: 'Productos ganadores verificados',
+    id: 'topventas',
+    name: 'Top Ventas por País',
+    icon: '🌎',
+    description: 'Productos más vendidos por país y periodo',
     gradient: 'from-yellow-400 to-amber-500',
     bgColor: 'rgba(234,179,8,0.08)',
     borderColor: 'rgba(234,179,8,0.25)',

@@ -23,25 +23,37 @@ function detectPlatform(url: string): string {
 
 // ── Source-specific analysis angles ──────────────────────────────────────────
 const SOURCE_CONTEXT: Record<string, string> = {
-  amazon:       `Analiza la competencia en Amazon para este producto en ${'{country}'}. ¿Cuántos sellers lo venden? ¿Cuál es el rango de precios? ¿Hay espacio para un nuevo vendedor? Incluye precio, rating, reviews y ventas estimadas de productos similares en Amazon.`,
+  amazon:       `Analiza la competencia en Amazon para este producto en ${'${country}'}. ¿Cuántos sellers lo venden? ¿Cuál es el rango de precios? ¿Hay espacio para un nuevo vendedor? Incluye precio, rating, reviews y ventas estimadas de productos similares en Amazon.`,
   google_trends:`Analiza la demanda de búsqueda para este tipo de producto en ${'${country}'}. ¿Está en tendencia? ¿Va subiendo o bajando? Incluye: trendDirection ("up"/"down"/"stable"), relatedQueries (array 3-5), peakMonths (array).`,
   meta_ads:     `Analiza qué anuncios de Facebook/Instagram existen para este tipo de producto dirigidos a ${'${country}'}. ¿Hay muchos anunciantes? ¿Qué hooks están usando? Incluye: hooks (array 3-5 hooks efectivos), adFormats (array), audienceAge.`,
-  tiktok:       `Analiza el potencial viral de este producto en TikTok para ${'${country}'}. ¿Hay videos virales de este producto? ¿Qué hashtags usar? Incluye: hashtags (array 5-8), contentStrategy (2-3 oraciones), viralPotential (0-100).`,
-  dropi:        `Analiza la viabilidad de vender este producto por dropshipping en Latinoamérica / ${'${country}'} a través de Dropi. ¿Está disponible en la plataforma? ¿Cuál sería el margen? Incluye supplier y leadTime si aplica.`,
-  tuwinner:     `Analiza si este producto tiene características de producto ganador para ${'${country}'}. ¿Hay evidencia de ventas altas? ¿Está saturado? ¿Cuál es el potencial de ganancia?`,
+  tiktok:       `Investiga qué productos se están vendiendo AHORA en TikTok Shop USA (Estados Unidos). Encuentra los más vendidos actualmente en TikTok Shop. Para cada producto incluye: nombre del producto, precio en USD, volumen de ventas estimado, rating, nombre de la tienda que lo vende, y evalúa si es viable para dropshipping en Latinoamérica / ${'${country}'}.`,
+  dropi:        `Investiga si el producto buscado está disponible en el catálogo de Dropi (dropi.co), la plataforma de dropshipping para Latinoamérica. Si lo encuentras: nombre del producto en Dropi, precio proveedor, precio sugerido de venta en ${'${country}'}, margen estimado (%), si tiene envío rápido, usa supplier: "Dropi". Si NO lo encuentras: sugiere 3-5 productos similares disponibles en Dropi con sus precios y márgenes estimados. Llena leadTime con el tiempo de entrega estimado de Dropi.`,
+  topventas:    `Investiga cuáles son los productos más vendidos en e-commerce en ${'${country}'} en los últimos {period} días. Para cada producto incluye: plataforma principal donde se vende (MercadoLibre, Amazon, Shopify, TikTok Shop, etc.) en campo platform, tendencia actual (up/down/stable en trendDirection), volumen de ventas estimado, categoría, y si es una oportunidad de dropshipping. Ordena por volumen de ventas de mayor a menor.`,
   aliexpress:   `Busca proveedores en AliExpress/Alibaba para este producto. ¿Cuál es el precio de costo? ¿Cuánto margen deja para vender en ${'${country}'}? Incluye: supplier (nombre), minOrder, leadTime.`,
   complete:     `Haz un análisis COMPLETO de 360° de este producto para ${'${country}'}: demanda, competencia, margen, viralidad y viabilidad dropshipping. Incluye: demandScore (0-100), competitionScore (0-100, menor=menos competencia), marginScore (0-100), trendDirection, hashtags (array 4-6), hooks (array 3-4), supplier, leadTime.`,
 };
 
 // ── Prompt builders ───────────────────────────────────────────────────────────
-function trendPeriodNote(source: string, trendPeriod?: number): string {
-  if (source !== 'google_trends' || !trendPeriod) return '';
-  return `\n- trendHistory: los 6 puntos deben representar los últimos ${trendPeriod} días divididos en intervalos iguales (punto 1 = hace ${trendPeriod}d, punto 6 = hoy)`;
+function periodNote(source: string, trendPeriod?: number, topVentasPeriod?: number): string {
+  if (source === 'google_trends' && trendPeriod) {
+    return `\n- trendHistory: los 6 puntos deben representar los últimos ${trendPeriod} días divididos en intervalos iguales (punto 1 = hace ${trendPeriod}d, punto 6 = hoy)`;
+  }
+  if (source === 'topventas' && topVentasPeriod) {
+    return `\n- trendHistory: los 6 puntos representan la evolución de ventas en los ${topVentasPeriod} días analizados (más antiguo primero, punto 6 = hoy)`;
+  }
+  return '';
 }
 
-function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string, trendPeriod?: number): string {
+function buildSourceCtx(source: string, country: string, topVentasPeriod?: number): string {
+  return (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete)
+    .replaceAll("${'${country}'}", country)
+    .replaceAll('${country}', country)
+    .replace('{period}', String(topVentasPeriod ?? 30));
+}
+
+function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
   const platform = detectPlatform(productUrl);
-  const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
+  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 
@@ -80,7 +92,8 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "virality": 68,
       "ease": 75,
       "channels": [{"name":"Meta Ads","value":40},{"name":"TikTok","value":30},{"name":"Google Ads","value":20},{"name":"WhatsApp","value":10}],
-      "trendHistory": [48, 55, 62, 68, 74, 78]
+      "trendHistory": [48, 55, 62, 68, 74, 78],
+      "platform": "MercadoLibre"
     }
   ],
   "summary": "Análisis ejecutivo: viabilidad, oportunidad y recomendación para vender este producto en ${country}"
@@ -94,13 +107,14 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta/implementación para un emprendedor
 - channels: array de exactamente 4 objetos {name, value} con los canales más efectivos (Meta Ads, TikTok, Google Ads, WhatsApp, etc.) y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)${trendPeriodNote(source, trendPeriod)}
+- trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)${periodNote(source, trendPeriod, topVentasPeriod)}
+- platform (opcional): plataforma principal donde se vende este producto (ej: MercadoLibre, Amazon, Shopify, TikTok Shop)
 - Incluye campos adicionales según la fuente seleccionada
 - Todo en español`;
 }
 
-function buildQueryPrompt(source: string, query: string, country: string, trendPeriod?: number): string {
-  const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
+function buildQueryPrompt(source: string, query: string, country: string, trendPeriod?: number, topVentasPeriod?: number): string {
+  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
 
   return `Eres un experto investigador de productos para ecommerce y dropshipping en Latinoamérica.
 
@@ -133,7 +147,8 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "virality": 68,
       "ease": 75,
       "channels": [{"name":"Meta Ads","value":40},{"name":"TikTok","value":30},{"name":"Google Ads","value":20},{"name":"WhatsApp","value":10}],
-      "trendHistory": [48, 55, 62, 68, 74, 78]
+      "trendHistory": [48, 55, 62, 68, 74, 78],
+      "platform": "MercadoLibre"
     }
   ],
   "summary": "Resumen ejecutivo de 2-3 oraciones con hallazgos y oportunidad en ${country}"
@@ -147,13 +162,14 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta para un emprendedor
 - channels: array de 4 objetos {name, value} con los mejores canales de venta y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${trendPeriodNote(source, trendPeriod)}
+- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${periodNote(source, trendPeriod, topVentasPeriod)}
+- platform (opcional): plataforma principal donde más se vende el producto
 - Todos los textos en español
 - Incluye campos adicionales según la fuente indicada`;
 }
 
-function buildImagePrompt(source: string, country: string, extraQuery?: string, trendPeriod?: number): string {
-  const sourceCtx = (SOURCE_CONTEXT[source] || SOURCE_CONTEXT.complete).replaceAll("${'${country}'}", country).replaceAll('${country}', country);
+function buildImagePrompt(source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
+  const sourceCtx = buildSourceCtx(source, country, topVentasPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 
@@ -193,7 +209,8 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "virality": 68,
       "ease": 75,
       "channels": [{"name":"Meta Ads","value":40},{"name":"TikTok","value":30},{"name":"Google Ads","value":20},{"name":"WhatsApp","value":10}],
-      "trendHistory": [48, 55, 62, 68, 74, 78]
+      "trendHistory": [48, 55, 62, 68, 74, 78],
+      "platform": "MercadoLibre"
     }
   ],
   "summary": "Análisis ejecutivo: producto identificado, viabilidad, oportunidad y recomendación para vender en ${country}"
@@ -207,7 +224,8 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta para un emprendedor
 - channels: array de 4 objetos {name, value} con los mejores canales de venta y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${trendPeriodNote(source, trendPeriod)}
+- trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${periodNote(source, trendPeriod, topVentasPeriod)}
+- platform (opcional): plataforma principal donde se vende el producto
 - Incluye campos adicionales según la fuente seleccionada
 - Todo en español`;
 }
@@ -225,7 +243,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Request body inválido' }, { status: 400 });
 
-    const { query, source, country, productUrl, imageBase64, imageMimeType, trendPeriod } = body;
+    const { query, source, country, productUrl, imageBase64, imageMimeType, trendPeriod, topVentasPeriod } = body;
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.trim().length > 0;
     const hasUrl   = typeof productUrl  === 'string' && productUrl.trim().length  > 0;
@@ -245,14 +263,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const period = typeof trendPeriod === 'number' ? trendPeriod : undefined;
+    const period    = typeof trendPeriod    === 'number' ? trendPeriod    : undefined;
+    const topPeriod = typeof topVentasPeriod === 'number' ? topVentasPeriod : undefined;
 
     // Build prompt: image > URL > text query
     const prompt = hasImage
-      ? buildImagePrompt(source, country, hasQuery ? query.trim() : undefined, period)
+      ? buildImagePrompt(source, country, hasQuery ? query.trim() : undefined, period, topPeriod)
       : hasUrl
-      ? buildUrlPrompt(productUrl.trim(), source, country, hasQuery ? query.trim() : undefined, period)
-      : buildQueryPrompt(source, query.trim(), country, period);
+      ? buildUrlPrompt(productUrl.trim(), source, country, hasQuery ? query.trim() : undefined, period, topPeriod)
+      : buildQueryPrompt(source, query.trim(), country, period, topPeriod);
 
     const displayQuery = hasImage
       ? `📷 Imagen${hasQuery ? ': ' + query.trim() : ''}`

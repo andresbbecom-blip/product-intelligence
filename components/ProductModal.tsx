@@ -340,6 +340,29 @@ export default function ProductModal({ product, source, trendPeriod, onClose }: 
             </Section>
           )}
 
+          {/* Top Ventas por País specific */}
+          {source === 'topventas' && (
+            <>
+              {product.platform && (
+                <Section title="Plataforma principal" color="orange" icon="🛒">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-base" style={{ color: '#FCD34D' }}>{product.platform}</span>
+                  </div>
+                </Section>
+              )}
+              {product.trendDirection && (
+                <Section title="Tendencia de ventas" color="blue" icon="📈">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{product.trendDirection === 'up' ? '📈' : product.trendDirection === 'down' ? '📉' : '➡️'}</span>
+                    <span className="font-bold text-base" style={{ color: product.trendDirection === 'up' ? '#10B981' : product.trendDirection === 'down' ? '#EF4444' : '#94A3B8' }}>
+                      {product.trendDirection === 'up' ? 'Ventas en alza 🔥' : product.trendDirection === 'down' ? 'Ventas a la baja' : 'Ventas estables'}
+                    </span>
+                  </div>
+                </Section>
+              )}
+            </>
+          )}
+
           {/* Complete: also show trend + hashtags + hooks */}
           {isComplete && product.trendDirection && (
             <Section title="Tendencia global">
