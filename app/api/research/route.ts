@@ -59,8 +59,8 @@ function googleTrendsExtras(source: string, period?: number): { schema: string; 
   const today = new Date().toISOString().slice(0, 10);
   const days = period ?? 30;
   return {
-    schema: ',\n  "trendTimeline": [\n    {"date":"YYYY-MM-DD","interest":85},{"date":"YYYY-MM-DD","interest":72},\n    {"date":"YYYY-MM-DD","interest":91},{"date":"YYYY-MM-DD","interest":78},\n    {"date":"YYYY-MM-DD","interest":88},{"date":"YYYY-MM-DD","interest":95}\n  ],\n  "relatedQueries": ["término 1", "término 2", "término 3", "término 4"]',
-    rules: `\n- trendTimeline: array de 6 objetos {date:"YYYY-MM-DD", interest:0-100} con fechas REALES de los últimos ${days} días (más antigua primero, última = ${today})\n- relatedQueries: array de 3-5 búsquedas relacionadas populares en el país`,
+    schema: ',\n  "trendTimeline": [\n    {"date":"YYYY-MM-DD","interest":67},{"date":"YYYY-MM-DD","interest":85},\n    {"date":"YYYY-MM-DD","interest":52},{"date":"YYYY-MM-DD","interest":91},\n    {"date":"YYYY-MM-DD","interest":63},{"date":"YYYY-MM-DD","interest":78}\n  ],\n  "relatedQueries": ["término 1", "término 2", "término 3", "término 4"]',
+    rules: `\n- trendTimeline: array de 6 objetos {date:"YYYY-MM-DD", interest:0-100} con fechas REALES distribuidas en los últimos ${days} días (más antigua primero, última ≈ ${today}). CRÍTICO: los valores deben reflejar variaciones NATURALES con picos y valles — NUNCA una línea recta ni monotónicamente creciente. Cada punto varía entre ±5 y ±20 respecto al anterior, con al menos 2 picos y 2 valles en los 6 puntos. Rango 45-95 para productos de alta demanda, 10-55 para demanda media.\n- relatedQueries: array de 3-5 búsquedas relacionadas reales y populares del producto en el país`,
   };
 }
 
@@ -121,7 +121,7 @@ REGLAS:
 - virality (0-100): potencial viral en redes sociales
 - ease (0-100): facilidad de venta/implementación para un emprendedor
 - channels: array de exactamente 4 objetos {name, value} con los canales más efectivos (Meta Ads, TikTok, Google Ads, WhatsApp, etc.) y su peso relativo (suman ~100)
-- trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)${periodNote(source, trendPeriod, topVentasPeriod)}
+- trendHistory: array de exactamente 6 números 0-100 con variaciones NATURALES (picos y valles — nunca línea recta ni solo creciente; variación ±5-15 entre puntos consecutivos)${periodNote(source, trendPeriod, topVentasPeriod)}
 - platform (opcional): plataforma principal donde se vende este producto (ej: MercadoLibre, Amazon, Shopify, TikTok Shop)
 - Incluye campos adicionales según la fuente seleccionada
 - Todo en español${gt.rules}`;

@@ -47,7 +47,6 @@ export interface ResearchResult {
   trendPeriod?: number;
   trendTimeline?: { date: string; interest: number }[];
   relatedQueries?: string[];
-  trendsError?: boolean;
 }
 
 export interface HistoryItem {

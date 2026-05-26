@@ -58,7 +58,7 @@ export default function Home() {
     setResult(null);
 
     try {
-      const researchFetch = fetch('/api/research', {
+      const res = await fetch('/api/research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,45 +73,8 @@ export default function Home() {
         }),
       });
 
-      // For google_trends with a text query, fetch real trend data in parallel
-      const trendsFetch = (selectedSource === 'google_trends' && query)
-        ? fetch('/api/trends', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query,
-              geo: COUNTRIES.find(c => c.name === selectedCountry)?.code ?? 'US',
-              period: trendPeriod,
-            }),
-          }).catch(() => null)
-        : null;
-
-      const res = await researchFetch;
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-
-      // Merge real Google Trends data (was already fetching in parallel)
-      if (trendsFetch) {
-        try {
-          const trendsRes = await trendsFetch;
-          if (trendsRes && trendsRes.ok) {
-            const td = await trendsRes.json();
-            if (Array.isArray(td.trendTimeline) && td.trendTimeline.length > 0) {
-              data.trendTimeline = td.trendTimeline;
-              data.relatedQueries = Array.isArray(td.relatedQueries) ? td.relatedQueries : [];
-            } else {
-              data.trendTimeline = undefined;
-              data.trendsError = true;
-            }
-          } else {
-            data.trendTimeline = undefined;
-            data.trendsError = true;
-          }
-        } catch {
-          data.trendTimeline = undefined;
-          data.trendsError = true;
-        }
-      }
 
       setResult(data);
 
