@@ -44,6 +44,9 @@ export interface ResearchResult {
   country: string;
   query: string;
   timestamp: string;
+  trendPeriod?: number;
+  trendTimeline?: { date: string; interest: number }[];
+  relatedQueries?: string[];
 }
 
 export interface HistoryItem {

@@ -6,6 +6,7 @@ import { ResearchResult, Product, DATA_SOURCES } from '@/types';
 import ProductCard from './ProductCard';
 
 const ChartsSection = dynamic(() => import('./ChartsSection'), { ssr: false });
+const TrendsBanner = dynamic(() => import('./TrendsBanner'), { ssr: false });
 
 /* ── Rotating loading messages ── */
 const LOADING_MSGS = [
@@ -223,6 +224,11 @@ export default function ResultsSection({ result, isLoading, error, selectedSourc
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Google Trends timeline banner ── */}
+      {result.source === 'google_trends' && (
+        <TrendsBanner result={result} />
       )}
 
       {/* ── Products grid ── */}

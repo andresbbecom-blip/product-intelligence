@@ -54,9 +54,20 @@ function buildSourceCtx(source: string, country: string, trendPeriod?: number, t
     .replaceAll('{period}', period);
 }
 
+function googleTrendsExtras(source: string, period?: number): { schema: string; rules: string } {
+  if (source !== 'google_trends') return { schema: '', rules: '' };
+  const today = new Date().toISOString().slice(0, 10);
+  const days = period ?? 30;
+  return {
+    schema: ',\n  "trendTimeline": [\n    {"date":"YYYY-MM-DD","interest":85},{"date":"YYYY-MM-DD","interest":72},\n    {"date":"YYYY-MM-DD","interest":91},{"date":"YYYY-MM-DD","interest":78},\n    {"date":"YYYY-MM-DD","interest":88},{"date":"YYYY-MM-DD","interest":95}\n  ],\n  "relatedQueries": ["término 1", "término 2", "término 3", "término 4"]',
+    rules: `\n- trendTimeline: array de 6 objetos {date:"YYYY-MM-DD", interest:0-100} con fechas REALES de los últimos ${days} días (más antigua primero, última = ${today})\n- relatedQueries: array de 3-5 búsquedas relacionadas populares en el país`,
+  };
+}
+
 function buildUrlPrompt(productUrl: string, source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
   const platform = detectPlatform(productUrl);
   const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
+  const gt = googleTrendsExtras(source, trendPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 
@@ -99,7 +110,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "platform": "MercadoLibre"
     }
   ],
-  "summary": "Análisis ejecutivo: viabilidad, oportunidad y recomendación para vender este producto en ${country}"
+  "summary": "Análisis ejecutivo: viabilidad, oportunidad y recomendación para vender este producto en ${country}"${gt.schema}
 }
 
 REGLAS:
@@ -113,11 +124,12 @@ REGLAS:
 - trendHistory: array de exactamente 6 números 0-100 representando evolución del interés en los últimos 6 meses (más antiguo primero)${periodNote(source, trendPeriod, topVentasPeriod)}
 - platform (opcional): plataforma principal donde se vende este producto (ej: MercadoLibre, Amazon, Shopify, TikTok Shop)
 - Incluye campos adicionales según la fuente seleccionada
-- Todo en español`;
+- Todo en español${gt.rules}`;
 }
 
 function buildQueryPrompt(source: string, query: string, country: string, trendPeriod?: number, topVentasPeriod?: number): string {
   const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
+  const gt = googleTrendsExtras(source, trendPeriod);
 
   return `Eres un experto investigador de productos para ecommerce y dropshipping en Latinoamérica.
 
@@ -154,7 +166,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "platform": "MercadoLibre"
     }
   ],
-  "summary": "Resumen ejecutivo de 2-3 oraciones con hallazgos y oportunidad en ${country}"
+  "summary": "Resumen ejecutivo de 2-3 oraciones con hallazgos y oportunidad en ${country}"${gt.schema}
 }
 
 REGLAS:
@@ -168,11 +180,12 @@ REGLAS:
 - trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${periodNote(source, trendPeriod, topVentasPeriod)}
 - platform (opcional): plataforma principal donde más se vende el producto
 - Todos los textos en español
-- Incluye campos adicionales según la fuente indicada`;
+- Incluye campos adicionales según la fuente indicada${gt.rules}`;
 }
 
 function buildImagePrompt(source: string, country: string, extraQuery?: string, trendPeriod?: number, topVentasPeriod?: number): string {
   const sourceCtx = buildSourceCtx(source, country, trendPeriod, topVentasPeriod);
+  const gt = googleTrendsExtras(source, trendPeriod);
 
   return `Eres un experto en ecommerce y dropshipping en Latinoamérica.
 
@@ -216,7 +229,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
       "platform": "MercadoLibre"
     }
   ],
-  "summary": "Análisis ejecutivo: producto identificado, viabilidad, oportunidad y recomendación para vender en ${country}"
+  "summary": "Análisis ejecutivo: producto identificado, viabilidad, oportunidad y recomendación para vender en ${country}"${gt.schema}
 }
 
 REGLAS:
@@ -230,7 +243,7 @@ REGLAS:
 - trendHistory: array de exactamente 6 números 0-100 mostrando evolución del interés en los últimos 6 meses${periodNote(source, trendPeriod, topVentasPeriod)}
 - platform (opcional): plataforma principal donde se vende el producto
 - Incluye campos adicionales según la fuente seleccionada
-- Todo en español`;
+- Todo en español${gt.rules}`;
 }
 
 function extractJSON(text: string): string | null {
@@ -328,6 +341,11 @@ export async function POST(request: NextRequest) {
       country,
       query: displayQuery,
       timestamp: new Date().toISOString(),
+      ...(source === 'google_trends' && {
+        trendPeriod: period,
+        trendTimeline: Array.isArray(parsed.trendTimeline) ? parsed.trendTimeline : undefined,
+        relatedQueries: Array.isArray(parsed.relatedQueries) ? parsed.relatedQueries : undefined,
+      }),
     });
   } catch (err) {
     console.error('[/api/research]', err);
